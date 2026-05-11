@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - ENV=development
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  mongodb:
+    image: mongodb/mongodb-community-server
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data/db

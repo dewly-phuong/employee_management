@@ -1,0 +1,24 @@
+[project]
+name = "employee-management"
+version = "0.1.0"
+description = "Application for manage employee in company"
+authors = [
+    {name = "dewly-phuong",email = "phuong.truong@dewly.ai"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi (>=0.136.1,<0.137.0)",
+    "uvicorn (>=0.46.0,<0.47.0)",
+    "pydantic (>=2.13.4,<3.0.0)",
+    "pymongo (>=4.17.0,<5.0.0)",
+    "motor (>=3.7.1,<4.0.0)",
+    "dotenv (>=0.9.9,<0.10.0)"
+]
+
+[tool.poetry]
+packages = [{include = "employee_management", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
