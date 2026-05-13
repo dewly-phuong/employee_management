@@ -1,4 +1,7 @@
 from pydantic import BaseModel
 
+
 class User(BaseModel):
-    pass
+    username: str
+    company: str
+    password: str
