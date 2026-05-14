@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter("/auth")
+router = APIRouter(prefix="/auth")
 
 
 @router.post("/login")
@@ -34,12 +34,9 @@ async def get_me(
     logger.info(f"LOGGIN ROUTE: GET CURRENT USER: {current_user.username}")
     return current_user
 
-
-@router.post(
-    "/register",
-)
-async def register(register_data: RegisterRequest) -> bool:
-    pass
+@router.post("/register")
+async def register() -> bool:
+    return {}
 
 
 @router.post("/refresh")
