@@ -1,16 +1,17 @@
 from fastapi import FastAPI
+from .api.routers import users, auth
+from .core.database import db_manger
 from contextlib import asynccontextmanager
-from .api.routers import users
-from .database import MongoDB
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ## Perform anything startup with app here
     # Initialize mongo database client
-    app.state.mongo_client = MongoDB("company_db")
+    await db_manger.connect()
     yield
     # Close Mongo database connection
-    app.state.mongo_client.close()
+    db_manger.close()
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(users.router)
+app.include_router(auth.router)
