@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Depends
 from typing import Annotated, Any
-from dotenv import load_dotenv
-import os
+from fastapi.security import OAuth2PasswordBearer
+from pwdlib import PasswordHash
 import jwt
 from datetime import datetime, timedelta, timezone
 from jwt.exceptions import InvalidTokenError
@@ -13,18 +13,18 @@ from ..schemas.token import (
     TokenData,
 )
 from ..models.user import User
-from ..core.config import oauth2_scheme, password_hasher
-from ..api.dependencies import get_mongo_manager
+from ..core.config import settings
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+ACCESS_TOKEN_EXPIRE_MINUTES = int(settings.ACCESS_TOKEN_EXPRIRES_IN_MINUTES)
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
 
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-SECRET_KEY = os.getenv("SECRET_KEY", "")
-ALGORITHM = os.getenv("ALGORITHM", "")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+password_hasher = PasswordHash.recommended()
 
 
 async def login(login_request: LoginRequest) -> LoginResponse:
@@ -40,7 +40,7 @@ async def login(login_request: LoginRequest) -> LoginResponse:
         LoginResponse: _description_
     """
     logger.info(f"LOGIN SERVICE: ATTEMPTING TO LOGIN USER: {login_request.username}")
-    user = await authenticate(login_request, get_mongo_manager())
+    user = await authenticate(login_request)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -49,7 +49,7 @@ async def login(login_request: LoginRequest) -> LoginResponse:
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
+        data={"sub": user.username}, expires_delta=access_token_expires
     )
     return LoginResponse(access_token=access_token, token_type="bearer")
 
@@ -72,7 +72,6 @@ async def register(register_request: RegisterRequest) -> bool:
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Any, Depends(get_mongo_manager)],
 ) -> CurrentUserResponse:
     """Helper method for get_current_user method
         Verify access token and return user information
@@ -103,26 +102,24 @@ async def get_current_user(
     except InvalidTokenError:
         raise credentials_exception
     logger.info(f"GET CURRENT USER SERVICE: FOUND USER: {token_data.username}")
-    user = await db.get_collection("users").find_one(
-        {"username": token_data.username}
-    )
+    user = await User.find_one(User.username == token_data.username)
     if user is None:
         raise credentials_exception
     current_user_response = CurrentUserResponse(
-        username=user["username"],
-        email=user["email"],
-        full_name=user["full_name"],
-        role=user["role"],
-        department=user["department"],
-        skills=user["skills"],
-        created_at=user["created_at"],
-        updated_at=user["updated_at"],
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        department=user.department,
+        skills=user.skills,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
     )
     return current_user_response
 
 
 async def authenticate(
-    login_request: LoginRequest, db: Annotated[Any, Depends(get_mongo_manager)]
+    login_request: LoginRequest
 ) -> User:
     """Helper method for log in method
         Verify user base on username and password
@@ -136,11 +133,14 @@ async def authenticate(
     logger.info(
         f"AUTHENTICATE SERVICE: ATTEMPTING TO AUTHENTICATE USER: {login_request.username}"
     )
-    employee_collection = db.get_collection("users")
-    user = await employee_collection.find_one({"username": login_request.username})
+    # employee_collection = db.get_collection("users")
+    # user = await employee_collection.find_one({"username": login_request.username})
+    # user_model = User()
+    user = await User.find_one(User.username == login_request.username)
+    print(user)
     if not user:
         return None
-    if not verify_password(login_request.password, user["password"]):
+    if not verify_password(login_request.password, user.password):
         return None
     return user
 
