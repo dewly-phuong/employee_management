@@ -1,12 +1,12 @@
 from pymongo import AsyncMongoClient
 from beanie import init_beanie
 from ..models.user import User
+from ..models.project import Project
 import logging
 from ..core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class MongoDB:
     def __init__(self):
@@ -20,7 +20,9 @@ class MongoDB:
         await init_beanie(
             database=self.client[settings.MONGODB_DBNAME],
             document_models=[
-                User,  # Thêm các class Document khác vào danh sách này khi dự án phát triển
+                User, 
+                Project,
+                # Thêm các class Document khác vào danh sách này khi dự án phát triển
             ],
         )
         

@@ -4,7 +4,6 @@ from typing import Annotated
 from ...schemas.token import (
     LoginRequest,
     LoginResponse,
-    RegisterRequest,
     CurrentUserResponse,
 )
 from ...services.authentication_service import get_current_user, login
@@ -13,7 +12,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(prefix="/auth", tags=["Authentication Endpoints"])
 
 
 @router.post("/login")

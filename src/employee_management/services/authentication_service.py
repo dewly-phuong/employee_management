@@ -137,7 +137,6 @@ async def authenticate(
     # user = await employee_collection.find_one({"username": login_request.username})
     # user_model = User()
     user = await User.find_one(User.username == login_request.username)
-    print(user)
     if not user:
         return None
     if not verify_password(login_request.password, user.password):
