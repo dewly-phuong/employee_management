@@ -1,13 +1,11 @@
-from ..repositories.user_repository import user_repository
 from ..repositories.irepository import IRepository
 from ..schemas.user import UserCreateRequest, UserResponse, UserUpdateRequest
+from ..services.authentication_service import get_password_hash
 from typing import List
 from uuid import UUID
-from ..services.authentication_service import get_password_hash
 from datetime import datetime, timezone
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UserService():
@@ -56,4 +54,3 @@ class UserService():
         except Exception as exc:
             raise ValueError from exc
     
-user_service = UserService(user_repository)

@@ -1,10 +1,10 @@
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pwdlib import PasswordHash
+from functools import lru_cache
+from pathlib import Path
 
-
-
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 class Settings(BaseSettings):
     # Tự động map với biến MONGODB_URL trong .env
@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     
     # Cấu hình đọc file .env
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=str(BASE_DIR / ".env"), env_file_encoding="utf-8", extra="ignore"
     )
-    
-settings = Settings()
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+

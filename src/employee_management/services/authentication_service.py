@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status, Depends
+from fastapi import Depends
 from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
@@ -13,17 +13,19 @@ from ..schemas.token import (
     TokenData,
 )
 from ..models.user import User
-from ..core.config import settings
+from ..core.config import get_settings
+from ..core.exceptions import AuthenticationError
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
 ACCESS_TOKEN_EXPIRE_MINUTES = int(settings.ACCESS_TOKEN_EXPRIRES_IN_MINUTES)
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 password_hasher = PasswordHash.recommended()
 
 
@@ -42,11 +44,7 @@ async def login(login_request: LoginRequest) -> LoginResponse:
     logger.info(f"LOGIN SERVICE: ATTEMPTING TO LOGIN USER: {login_request.username}")
     user = await authenticate(login_request)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthenticationError("Incorrect username or password")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
@@ -88,11 +86,7 @@ async def get_current_user(
         CurrentUserResponse: _description_
     """
     logger.info("GET CURRENT USER SERVICE: ATTEMPTING TO GET USER")
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    credentials_exception = AuthenticationError(detail="Could not validate credentials")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         username = payload.get("sub")
@@ -105,17 +99,8 @@ async def get_current_user(
     user = await User.find_one(User.username == token_data.username)
     if user is None:
         raise credentials_exception
-    current_user_response = CurrentUserResponse(
-        username=user.username,
-        email=user.email,
-        full_name=user.full_name,
-        role=user.role,
-        department=user.department,
-        skills=user.skills,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
-    )
-    return current_user_response
+    print(user)
+    return CurrentUserResponse.model_validate(user)
 
 
 async def authenticate(

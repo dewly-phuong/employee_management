@@ -1,4 +1,3 @@
-from ..repositories.project_repository import project_repository
 from ..repositories.irepository import IRepository
 from ..schemas.project import ProjectCreateRequest, ProjectResponse, ProjectUpdateRequest
 from ..utils.enums import ProjectStatus
@@ -7,7 +6,6 @@ from uuid import UUID
 from datetime import datetime, timezone
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ProjectService:
@@ -20,8 +18,8 @@ class ProjectService:
                           ) -> ProjectResponse:
         logger.info("PROJECTSERVICE: CREATE PROJECT...")
         obj = request.model_dump()
-        obj['status'] = ProjectStatus[obj['status']]
         obj['updated_at'] = datetime.now(timezone.utc)
+        obj['status'] = ProjectStatus(obj['status'])
         db_object = self.repo.model(**obj)
         return ProjectResponse.model_validate(await self.repo.create(db_object))
     
@@ -54,4 +52,3 @@ class ProjectService:
         except Exception as exc:
             raise ValueError from exc
         
-project_service = ProjectService(project_repository)

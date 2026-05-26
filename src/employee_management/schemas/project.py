@@ -7,7 +7,6 @@ from typing import List
 class ProjectCreateRequest(BaseModel):
     name: str = Field(min_length=10, max_length=100)
     description: str = Field(max_length=255)
-    description: str 
     status: str
     manager_id: UUID
     member_ids: List[UUID] = Field(default=[], description="")

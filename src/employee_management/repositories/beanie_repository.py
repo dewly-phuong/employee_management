@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from datetime import timezone, datetime
 from .irepository import IRepository
+from ..core.exceptions import NotFoundError
 
 class BeanieRepository(IRepository):
     def __init__(self, model: Type[Document]):
@@ -22,7 +23,7 @@ class BeanieRepository(IRepository):
     async def update_by_id(self, id:UUID, update_request: Type[BaseModel] | Mapping[str, Any]):
         db_object = await self.model.get(id)
         if not db_object:
-            raise (ValueError, DocumentNotFound)
+            raise NotFoundError(f"Document with id {id} not found")
         if isinstance(update_request, dict):
             update_data = update_request
         else:
@@ -39,6 +40,6 @@ class BeanieRepository(IRepository):
     async def delete_by_id(self, id: PydanticObjectId):
         db_object = await self.model.get(id)
         if not db_object:
-            raise (ValueError, DocumentNotFound)
+            raise NotFoundError(f"Document with id {id} not found")
         else:
             await db_object.delete()

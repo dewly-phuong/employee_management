@@ -1,9 +1,7 @@
 from datetime import datetime
-
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional
 from uuid import UUID
-
 from ..utils.enums import UserRole
 
 
@@ -33,14 +31,18 @@ class RegisterRequest(BaseModel):
 class CurrentUserResponse(BaseModel):
     """Data transfer object for current user responses."""
 
-    username: str
-    email: EmailStr
+    id: UUID
+    email: EmailStr = Field(unique=True)
+    username: str = Field(unique=True)
     full_name: str
-    role: UserRole
+    role: UserRole = UserRole.EMPLOYEE
     department: str
-    skills: list[str]
+    skills: list[str] = []
+    is_active: bool = True
     created_at: datetime
     updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenData(BaseModel):
