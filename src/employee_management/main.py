@@ -1,17 +1,33 @@
 from fastapi import FastAPI
-from .api.routers import users, auth
-from .core.database import db_manger
 from contextlib import asynccontextmanager
+from .api.router import api_router
+from .core.database import db_manager
+from .core.logging_config import setup_logging
+from .core.exceptions import (
+    NotFoundError,
+    BadRequestError,
+    AuthenticationError,
+    not_found_exception_handler,
+    bad_request_exception_handler,
+    authentication_exception_handler
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ## Perform anything startup with app here
+    # Setup central logging
+    setup_logging()
     # Initialize mongo database client
-    await db_manger.connect()
+    await db_manager.connect()
     yield
     # Close Mongo database connection
-    db_manger.close()
+    db_manager.close()
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(users.router)
-app.include_router(auth.router)
+
+# Register Exception Handlers
+app.add_exception_handler(NotFoundError, not_found_exception_handler)
+app.add_exception_handler(BadRequestError, bad_request_exception_handler)
+app.add_exception_handler(AuthenticationError, authentication_exception_handler)
+
+# Include main API router
+app.include_router(api_router, prefix="/api/v1")

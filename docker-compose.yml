@@ -1,19 +1,31 @@
+version: "3.9"
+
 services:
+  mongo:
+    image: mongo:6.0
+    container_name: employee_management_mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: employee_management_web
+    depends_on:
+      - mongo
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ./src:/app/src
+    env_file:
+      - .env
     environment:
-      - ENV=development
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-  mongodb:
-    image: mongodb/mongodb-community-server
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=root
-    volumes:
-      - type: bind
-        source: ./data
-        target: /data/db
+      - MONGODB_URL=mongodb://mongo:27017
+    command: ["uvicorn", "src.employee_management.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  mongo_data:

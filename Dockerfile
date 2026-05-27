@@ -1,33 +1,40 @@
-# Stage 1: Build stage
-FROM python:3.14-slim AS builder
+# Giai đoạn 1: Xây dựng (Builder)
+FROM python:3.13-slim AS builder
+
+# Thiết lập các biến môi trường cho Python và Poetry
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    POETRY_VERSION=2.4.0 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
+
+# Thêm Poetry vào PATH
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+# Cài đặt các công cụ hệ thống cần thiết và Poetry
+RUN apt-get update && apt-get install --no-install-recommends -y curl \
+    && curl -sSL https://install.python-poetry.org | python3 -
 
 WORKDIR /app
 
-# Cài đặt Poetry
-ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
-
-RUN pip install poetry==2.4.0
-
-# Copy file cấu hình poetry
+# Copy các file quản lý phụ thuộc
 COPY pyproject.toml poetry.lock ./
 
-# Cài đặt dependencies
-RUN poetry install --no-root && rm -rf $POETRY_CACHE_DIR
+# Chỉ cài đặt các thư viện cần thiết (loại bỏ group dev nếu có)
+RUN poetry lock && poetry install --only main --no-root
 
-# Stage 2: Runtime stage
-FROM python:3.14-slim AS runtime
+# Giai đoạn 2: Chạy ứng dụng (Runtime)
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app
 
-# Copy môi trường ảo (.venv) từ stage builder
-COPY --from=builder /app/.venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
+# Copy các gói thư viện đã cài đặt từ builder
+COPY --from=builder /usr/local /usr/local
 
-# Copy mã nguồn
+# Copy mã nguồn của dự án
 COPY . .
 
-# Chạy FastAPI
-CMD ["/app/.venv/bin/python", "-m", "uvicorn", "employee_management.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Chạy ứng dụng FastAPI bằng Uvicorn
+EXPOSE 8000
+CMD ["uvicorn", "src.employee_management.main:app", "--host", "0.0.0.0", "--port", "8000"]
