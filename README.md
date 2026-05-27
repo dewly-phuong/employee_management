@@ -62,4 +62,3 @@ Common REST endpoints for employee management may include:
 
 - Ensure database settings or persistence configuration are set up if the project uses a database or file storage.
 - Check `requirements.txt` for dependency versions.
-update
